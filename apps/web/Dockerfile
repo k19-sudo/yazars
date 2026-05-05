@@ -1,13 +1,28 @@
-FROM oven/bun:latest
-
+FROM oven/bun:latest AS base
 WORKDIR /app
 
-# Önce bağımlılıkları yükle (Cache için)
-COPY package.json bun.lockb ./
-RUN bun install
+# Copy root workspace files first
+COPY package.json bun.lock ./
+COPY packages/ ./packages/
 
-COPY . .
+# Copy web app
+COPY apps/web/package.json ./apps/web/
 
-EXPOSE 5173
+# Install dependencies
+RUN bun install --frozen-lockfile
 
-CMD ["bun", "run", "dev", "--host"]
+# Copy web source
+COPY apps/web/ ./apps/web/
+
+# Build for production
+RUN cd apps/web && bun run build
+
+# --- Production stage ---
+FROM oven/bun:latest
+WORKDIR /app
+
+COPY --from=base /app/apps/web/dist ./dist
+
+EXPOSE 3000
+
+CMD ["bunx", "serve", "-s", "dist", "-l", "3000"]

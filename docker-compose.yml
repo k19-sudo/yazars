@@ -1,35 +1,40 @@
-version: '5.1.2'
-
 services:
   web:
-    build: ./apps/web
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
     ports:
-      - "6666:6666"
-    volumes:
-      - .:/app
+      - "3000:3000"
     environment:
       - NODE_ENV=production
     depends_on:
       - db
 
   api:
-    build: ./apps/api
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
     ports:
       - "5555:5555"
-    volumes:
-      - ./apps/api:/app
     env_file:
-      - ./apps/api/.env
+      - .env
     environment:
       - NODE_ENV=production
     depends_on:
       - db
+
   db:
-    env_file: ./apps/api/.env
     image: postgres:latest
+    env_file:
+      - .env
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=myapp
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-yazars}
+    ports:
+      - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:
